@@ -1,0 +1,20 @@
+name: base
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+  - r
+dependencies:
+  - r-essentials 
+  - r-argparse
+  - r-ggplot2
+  - r-gplots
+  - r-devtools
+  - r-rcolorbrewer
+  - r-shiny
+  - bioconductor-deseq2 
+  - bioconductor-tximport
+  - bioconductor-edger
+  - bioconductor-annotate
+  - bioconductor-org.hs.eg.db
+  - bioconductor-debrowser

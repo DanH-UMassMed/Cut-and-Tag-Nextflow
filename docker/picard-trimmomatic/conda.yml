@@ -1,0 +1,12 @@
+name: fastqc-multiqc
+channels:
+  - bioconda
+  - conda-forge
+  - defaults 
+dependencies:
+  - picard=2.18.23
+  - trimmomatic=0.39
+  - fastp=0.23.4
+  - trim-galore=0.6.10
+
+ 

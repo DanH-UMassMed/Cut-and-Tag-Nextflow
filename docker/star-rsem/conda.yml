@@ -1,0 +1,7 @@
+name: star-rsem
+channels:
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - pandas
