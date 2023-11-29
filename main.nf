@@ -1,10 +1,6 @@
 #!/usr/bin/env nextflow 
 
 
-if(params.run_get_dropbox_data) {
-  include { GET_EXPERIMENT_DATA } from "./workflows/01-get-dropbox-data"
-}
-
 if(params.run_get_wormbase_data) {
   include { RUN_GET_WORMBASE_DATA } from "./workflows/00-run-get-wormbase-data"
 }
@@ -17,6 +13,14 @@ if(params.run_create_salmon_index) {
   include { CREATE_SALMON_INDEX } from "./workflows/00-create-salmon-index"
 }
 
+if(params.run_get_dropbox_data) {
+  include { GET_EXPERIMENT_DATA } from "./workflows/01-get-dropbox-data"
+}
+
+if(params.run_cut_and_tag) {
+  include { RUN_CUT_AND_TAG } from "./workflows/01-run-cut-and-tag"
+}
+
 if(params.run_fastqc) {
   include { RUN_FASTQC } from "./workflows/02-run-fastqc"
 }
@@ -27,6 +31,10 @@ if(params.run_find_lib_type) {
 
 if(params.run_trimmomatic) {
   include { RUN_TRIMMOMATIC } from "./workflows/03-run-trimmomatic"
+}
+
+if(params.run_trim_galore) {
+  include { RUN_TRIM_GALORE } from "./workflows/03-run-trim-galore"
 }
 
 if(params.run_rnaseq_rsem) {
@@ -76,6 +84,12 @@ workflow {
     GET_EXPERIMENT_DATA()
   }
 
+  if(params.run_cut_and_tag == true) {
+    log.info("Running Cut And Tag")
+    RUN_CUT_AND_TAG()
+  }
+
+
   if(params.run_fastqc == true) {
     log.info("Running Get Experiment Data")
     RUN_FASTQC()
@@ -89,6 +103,11 @@ workflow {
   if(params.run_trimmomatic == true) {
     log.info("Running Trimmomatic")
     RUN_TRIMMOMATIC()
+  }
+
+  if(params.run_trim_galore == true) {
+    log.info("Running Trim-Galore")
+    RUN_TRIM_GALORE()
   }
 
   if(params.run_rnaseq_rsem == true) {

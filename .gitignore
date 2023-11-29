@@ -1,0 +1,17 @@
+# Directories to ignore
+.nextflow/
+**/data/
+**/results/
+work/
+**/deseq_out
+**/__pycache__
+
+# Files to ignore
+docs/overview.pdf
+.nextflow.log*
+.nextflow.pid
+.DS_Store
+hs_err*.log
+nohup.out
+run_deseq2_logfile.txt
+run_deseq2_warnfile.txt

@@ -1,5 +1,5 @@
 
-//http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/TrimmomaticManual_V0.32.pdf
+
 
 /**********************************
 Phred+33 Scores
@@ -14,9 +14,9 @@ Quality | Prob.       | Accuracy
    40   | 1 in 10,000 | 99.99%
 *************************************/
 
-process TRIMMOMATIC {
+process TRIM_GALORE {
     label 'process_medium'
-    tag "TRIMMOMATIC on $sample_id"
+    tag "TRIM_GALORE on $sample_id"
     container "danhumassmed/picard-trimmomatic:1.0.1"
 
     input:
@@ -26,17 +26,17 @@ process TRIMMOMATIC {
 
     script:
     """
-    trimmomatic.sh ${reads[0]} ${reads[1]} ${data_root} ${dir_suffix} ${params.trimmomatic_control}
+    trim_galore.sh ${reads[0]} ${reads[1]} ${data_root} ${dir_suffix} ${task.cpus}
     """
 
     output:
-    path "trim_${dir_suffix}" 
+    path "output_${dir_suffix}" 
 
 }
 
-process TRIMMOMATIC_SINGLE {
+process TRIM_GALORE_SINGLE {
     label 'process_medium'
-    tag "TRIMMOMATIC_SINGLE on ${reads.getName().split("\\.")[0]}"
+    tag "TRIM_GALORE_SINGLE on ${reads.getName().split("\\.")[0]}"
     container "danhumassmed/picard-trimmomatic:1.0.1"
 
     input:
@@ -46,15 +46,14 @@ process TRIMMOMATIC_SINGLE {
 
     script:
     """
-    trimmomatic.sh ${reads} "" ${data_root} ${dir_suffix} ${params.trimmomatic_control}
+    trim_galore.sh ${reads} "" ${data_root} ${dir_suffix} ${task.cpus}
     """
 
     output:
-    path "trim_${dir_suffix}" 
-
+    path "output_${dir_suffix}" 
 }
 
-process TRIMMOMATIC_AGGREGATE {
+process TRIM_GALORE_AGGREGATE {
     label 'process_low'
     container "danhumassmed/picard-trimmomatic:1.0.1"
     publishDir params.results_dir, mode:'copy'
@@ -64,11 +63,11 @@ process TRIMMOMATIC_AGGREGATE {
 
     script:
     """
-    trim_aggregate.sh
+    trim_aggregate.sh "has_report_data"
     """
 
     output:
     path "trimmed" 
+    path "trim_report"
 
 }
-

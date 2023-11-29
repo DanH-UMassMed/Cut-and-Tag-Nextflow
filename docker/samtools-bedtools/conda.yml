@@ -1,7 +1,9 @@
 name: samtools-bedtools
 channels:
-  #- conda-forge
+  - conda-forge
   - bioconda
   - defaults 
 dependencies:
   - pandas
+  - tabix=1.11
+
