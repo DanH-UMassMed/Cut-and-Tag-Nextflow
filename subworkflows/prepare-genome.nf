@@ -5,13 +5,13 @@ include { SAMTOOLS_FAIDX as SAMTOOLS_CHROMSIZES } from "../modules/samtools"
 
 workflow PREPARE_GENOME {
   main:
-    ch_fasta       = Channel.from( file(params.fasta) ).map { row -> [[id:"target_fasta"], row] }
+    ch_fasta          = Channel.from( file(params.fasta) ).map { row -> [[id:"target_fasta"], row] }
 
-    ch_gtf         = Channel.from( file(params.gtf) )
+    ch_gtf            = Channel.from( file(params.gtf) )
 
-    ch_gene_bed    = Channel.from( file(params.gene_bed) )
+    ch_gene_bed       = Channel.from( file(params.gene_bed) )
 
-    ch_tabix       = ch_gene_bed.map { row -> [ [ id:row.getName() ] , row ] }
+    ch_tabix          = ch_gene_bed.map { row -> [ [ id:row.getName() ] , row ] }
 
     BEDTOOLS_SORT ( ch_tabix, [] )
 
@@ -19,11 +19,11 @@ workflow PREPARE_GENOME {
 
     ch_gene_bed_index = TABIX_BGZIPTABIX.out.gz_tbi
 
-    ch_fasta_index            = SAMTOOLS_FAIDX ( ch_fasta ).fai  
+    ch_fasta_index    = SAMTOOLS_FAIDX ( ch_fasta ).fai  
 
-    ch_chrom_sizes            = SAMTOOLS_CHROMSIZES ( ch_fasta ).sizes.map{ it[1] }
+    ch_chrom_sizes    = SAMTOOLS_CHROMSIZES ( ch_fasta ).sizes.map{ it[1] }
     
-    ch_bt2_index = [ [id:"target_index"], file(params.bowtie2) ]
+    ch_bt2_index      = [ [id:"target_index"], file(params.bowtie2) ]
 
     ch_genome_include_regions = Channel.empty()
     

@@ -6,32 +6,14 @@ import java.util.Date
 class WorkflowUtils {
 
     public static void initialize(params, log) {
-        if(!params.data_remote) {
-          Nextflow.error("ERROR: params.data_remote is required for this pipeline. Please add to config and resume")
+        // Check input has been provided
+        if (!params.sample_sheet) {
+            Nextflow.error("Please provide an input samplesheet to the pipeline e.g. '--sample_sheet samplesheet.csv'")
         }
     }
 
-    public static List<String> generateUUIDs(int numberOfUUIDs) {
-        List<String> uuidList = []
-        for (int i = 0; i < numberOfUUIDs; i++) {
-            UUID uuid = UUID.randomUUID()
-            uuidList.add(uuid.toString())
-        }
-        return uuidList
-    }
-
-    public static String getStageDirName() {
-        Date currentDate = new Date()
-        String desiredDateFormat = "MMM-dd-yyyy"
-
-        SimpleDateFormat formatter = new SimpleDateFormat(desiredDateFormat)
-        String formattedDate = formatter.format(currentDate)
-        String retVal = "Results-$formattedDate"
-        Nextflow.log.warn("WARN:Stage Directory Name: $retVal")
-        return retVal
-    }
-
-
+    
+    //
     // Get attribute from genome config file e.g. fasta
     //
     public static Object getGenomeAttribute(params, attribute) {
@@ -43,5 +25,16 @@ class WorkflowUtils {
         return null
     }
 
-
+    //
+    // Get attribute from genome config file e.g. fasta
+    //
+    public static String getGenomeAttributeSpikeIn(params, attribute) {
+        def val = ''
+        if (params.genomes && params.spikein_genome && params.genomes.containsKey(params.spikein_genome)) {
+            if (params.genomes[ params.spikein_genome ].containsKey(attribute)) {
+                val = params.genomes[ params.spikein_genome ][ attribute ]
+            }
+        }
+        return val
+    }
 }

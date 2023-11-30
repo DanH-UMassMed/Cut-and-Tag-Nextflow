@@ -37,7 +37,7 @@ workflow LOAD_SAMPLE_SHEET {
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
 def get_samplesheet_paths(LinkedHashMap row) {
     def meta = [:]
-    meta.id            = "${row.group}_${row.replicate}_T1"
+    meta.id            = "${row.group}_${row.replicate}"
     meta.group         = row.group
     meta.replicate     = row.replicate.toInteger()
     meta.single_end    = (row.fastq_2 == "") ? true : false
@@ -56,6 +56,5 @@ def get_samplesheet_paths(LinkedHashMap row) {
         }
         array = [ meta, [ file(row.fastq_1), file(row.fastq_2) ] ]
     }
-    //print("sample_row: ${array}")
     return array
 }
