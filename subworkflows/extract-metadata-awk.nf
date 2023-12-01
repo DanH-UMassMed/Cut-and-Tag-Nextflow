@@ -16,6 +16,7 @@ workflow EXTRACT_METADATA_AWK {
 
     // Can run awk in script mode with a file from assets or with a setup of command line args
     if(script_mode) {
+        print("script ${script}\n")
         AWK_SCRIPT ( report, script )
         ch_metadata = AWK_SCRIPT.out.file
     }

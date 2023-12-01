@@ -1,7 +1,5 @@
 #!/usr/bin/env nextflow 
 
-
-
 nextflow.enable.dsl = 2
 
 /*
@@ -15,11 +13,11 @@ params.bowtie2   = WorkflowUtils.getGenomeAttribute(params, 'bowtie2')
 params.gtf       = WorkflowUtils.getGenomeAttribute(params, 'gtf')
 params.gene_bed  = WorkflowUtils.getGenomeAttribute(params, 'bed12')
 params.blacklist = WorkflowUtils.getGenomeAttribute(params, 'blacklist')
-print("params.fasta     ${params.fasta}")
-print("params.bowtie2   ${params.bowtie2}")
-print("params.gtf       ${params.gtf}")
-print("params.gene_bed  ${params.gene_bed}")
-print("params.blacklist ${params.blacklist}")
+print("params.fasta     ${params.fasta} \n")
+print("params.bowtie2   ${params.bowtie2} \n")
+print("params.gtf       ${params.gtf} \n")
+print("params.gene_bed  ${params.gene_bed} \n")
+print("params.blacklist ${params.blacklist} \n")
 
 /*
 ========================================================================================
@@ -30,6 +28,8 @@ print("params.blacklist ${params.blacklist}")
 if(params.normalisation_mode == "Spikein") {
     params.spikein_fasta   = WorkflowUtils.getGenomeAttributeSpikeIn(params, 'fasta')
     params.spikein_bowtie2 = WorkflowUtils.getGenomeAttributeSpikeIn(params, 'bowtie2')
+    print("params.spikein_fasta  ${params.spikein_fasta} \n")
+    print("params.spikein_bowtie2 ${params.spikein_bowtie2}\n")
 }
 
 /*

@@ -30,7 +30,7 @@ process SAMTOOLS_SORT {
     container 'danhumassmed/samtools-bedtools:1.0.1'
     publishDir = [
         path: { "${params.results_dir}/02_alignment/bowtie2/target" },
-        mode: "copy",
+        mode: "${params.publish_dir_mode}",
         pattern: "*.bam",
         enabled: ( params.save_align_intermed )
     ]
@@ -65,7 +65,7 @@ process SAMTOOLS_INDEX {
     container 'danhumassmed/samtools-bedtools:1.0.1'
     publishDir = [
                 path: { "${params.results_dir}/02_alignment/bowtie2/target" },
-                mode: "copy",
+                mode: "${params.publish_dir_mode}",
                 pattern: "*.bai",
                 enabled: ( params.save_align_intermed )
             ]
@@ -180,7 +180,7 @@ process SAMTOOLS_VIEW {
     container 'danhumassmed/samtools-bedtools:1.0.1'  
     publishDir = [
                 path: { "${params.results_dir}/02_alignment/bowtie2/target" },
-                mode: "copy",
+                mode: "${params.publish_dir_mode}",
                 pattern: "*.bam",
                 enabled: ( params.save_align_intermed )
             ] 
@@ -226,3 +226,4 @@ process SAMTOOLS_VIEW {
 
     """
 }
+

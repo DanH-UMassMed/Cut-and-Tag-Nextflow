@@ -23,9 +23,11 @@ if (params.blacklist) {
 ch_dummy_file = file("$projectDir/assets/dummy_file.txt", checkIfExists: true)
 
 // Stage awk files for parsing log files
+                                              
 ch_bt2_to_csv_awk     = file("$projectDir/bin/bt2_report_to_csv.awk"    , checkIfExists: true)
 ch_dt_frag_to_csv_awk = file("$projectDir/bin/dt_frag_report_to_csv.awk", checkIfExists: true)
-
+print("XXXXXXXXXprojectDir ${projectDir} \n")
+print("ch_bt2_to_csv_awk ${ch_bt2_to_csv_awk.getClass().getName()} \n")
 /*
 ========================================================================================
     IMPORT MODULES/SUBWORKFLOWS
@@ -37,7 +39,10 @@ include { LOAD_SAMPLE_SHEET } from "../subworkflows/load-sample-sheet.nf"
 include { FASTQC            } from "../modules/fastqc"
 include { TRIM_GALORE       } from "../modules/trim-galore"
 include { ALIGN_BOWTIE2     } from "../subworkflows/align-with-bowtie2"
-include { EXTRACT_METADATA_AWK as EXTRACT_BT2_TARGET_META  } from "../subworkflows/extract_metadata_awk"
+include { EXTRACT_METADATA_AWK as EXTRACT_BT2_TARGET_META  } from "../subworkflows/extract-metadata-awk"
+include { EXTRACT_METADATA_AWK as EXTRACT_BT2_SPIKEIN_META  } from "../subworkflows/extract-metadata-awk"
+include { MARK_DUPLICATES_PICARD                           } from "../subworkflows/mark-duplicates-with-picard"
+include { MARK_DUPLICATES_PICARD as DEDUPLICATE_PICARD     } from "../subworkflows/mark-duplicates-with-picard"
 
 
 workflow RUN_CUT_AND_TAG {
@@ -62,9 +67,16 @@ workflow RUN_CUT_AND_TAG {
     /*
     * SUBWORKFLOW: Alignment to target genome using botwtie2
     */
-    ALIGN_BOWTIE2 (ch_trimmed_reads, PREPARE_GENOME.out.bowtie2_index, PREPARE_GENOME.out.fasta )
+    ALIGN_BOWTIE2 (ch_trimmed_reads, 
+                   PREPARE_GENOME.out.bowtie2_index, 
+                   PREPARE_GENOME.out.bowtie2_spikein_index, 
+                   PREPARE_GENOME.out.fasta, 
+                   PREPARE_GENOME.out.spikein_fasta )
+
     ch_orig_bam                   = ALIGN_BOWTIE2.out.orig_bam
+    ch_orig_spikein_bam           = ALIGN_BOWTIE2.out.orig_spikein_bam
     ch_bowtie2_log                = ALIGN_BOWTIE2.out.bowtie2_log
+    ch_bowtie2_spikein_log        = ALIGN_BOWTIE2.out.bowtie2_spikein_log
 
     ch_samtools_bam               = ALIGN_BOWTIE2.out.bam
     ch_samtools_bai               = ALIGN_BOWTIE2.out.bai
@@ -72,18 +84,84 @@ workflow RUN_CUT_AND_TAG {
     ch_samtools_flagstat          = ALIGN_BOWTIE2.out.flagstat
     ch_samtools_idxstats          = ALIGN_BOWTIE2.out.idxstats
 
+    ch_samtools_spikein_bam       = ALIGN_BOWTIE2.out.spikein_bam
+    ch_samtools_spikein_bai       = ALIGN_BOWTIE2.out.spikein_bai
+    ch_samtools_spikein_stats     = ALIGN_BOWTIE2.out.spikein_stats
+    ch_samtools_spikein_flagstat  = ALIGN_BOWTIE2.out.spikein_flagstat
+    ch_samtools_spikein_idxstats  = ALIGN_BOWTIE2.out.spikein_idxstats
+
+
+    ch_metadata_bt2_target  = Channel.empty()
+    ch_metadata_bt2_spikein = Channel.empty()
+    def run_this_code = false
+    if(run_this_code) {
+        /*
+        * SUBWORKFLOW: extract aligner metadata
+        * This could likely be removed EXTRACT_BT2_TARGET_META EXTRACT_BT2_SPIKEIN_META
+        */
+        //script_mode = true
+        EXTRACT_BT2_TARGET_META (
+            ch_bowtie2_log,
+            ch_bt2_to_csv_awk,
+            true
+        )
+        ch_metadata_bt2_target = EXTRACT_BT2_TARGET_META.out.metadata
+        
+        EXTRACT_BT2_SPIKEIN_META (
+                ch_bowtie2_spikein_log,
+                ch_bt2_to_csv_awk,
+                true
+            )
+        ch_metadata_bt2_spikein = EXTRACT_BT2_SPIKEIN_META.out.metadata
+    }
+
     /*
-     * SUBWORKFLOW: extract aligner metadata
+     *  SUBWORKFLOW: Filter reads based some standard measures
+     *  - Unmapped reads 0x004
+     *  - Mate unmapped 0x0008
+     *  - Multi-mapped reads
+     *  - Filter out reads aligned to blacklist regions
+     *  - Filter out reads below a threshold q score
+     *  - Filter out mitochondrial reads (if required)
      */
-     //ext.suffix = "_meta_bt2_target"
-     //script_mode = true
-    EXTRACT_BT2_TARGET_META (
-        ch_bowtie2_log,
-        ch_bt2_to_csv_awk,
-        true
+
+/*
+     * SUBWORKFLOW: Mark duplicates on all samples
+     */
+    ch_markduplicates_metrics = Channel.empty()
+    MARK_DUPLICATES_PICARD (
+        ch_samtools_bam,
+        ch_samtools_bai,
+        true,
+        PREPARE_GENOME.out.fasta.collect(), 
+        PREPARE_GENOME.out.fasta_index.collect()
     )
-    ch_metadata_bt2_target = EXTRACT_BT2_TARGET_META.out.metadata
-    
+    ch_samtools_bam           = MARK_DUPLICATES_PICARD.out.bam
+    ch_samtools_bai           = MARK_DUPLICATES_PICARD.out.bai
+    ch_samtools_stats         = MARK_DUPLICATES_PICARD.out.stats
+    ch_samtools_flagstat      = MARK_DUPLICATES_PICARD.out.flagstat
+    ch_samtools_idxstats      = MARK_DUPLICATES_PICARD.out.idxstats
+    ch_markduplicates_metrics = MARK_DUPLICATES_PICARD.out.metrics
+
+    //EXAMPLE CHANNEL STRUCT: [[id:h3k27me3_R1, group:h3k27me3, replicate:1, single_end:false, is_control:false], [BAM]]
+    //ch_samtools_bam | view
+
+    /*
+     * SUBWORKFLOW: Remove duplicates - default is on IgG controls only
+     */
+    DEDUPLICATE_PICARD (
+        ch_samtools_bam,
+        ch_samtools_bai,
+        params.dedup_target_reads,
+        PREPARE_GENOME.out.fasta.collect(),
+        PREPARE_GENOME.out.fasta_index.collect()
+    )
+    ch_samtools_bam      = DEDUPLICATE_PICARD.out.bam
+    ch_samtools_bai      = DEDUPLICATE_PICARD.out.bai
+    ch_samtools_stats    = DEDUPLICATE_PICARD.out.stats
+    ch_samtools_flagstat = DEDUPLICATE_PICARD.out.flagstat
+    ch_samtools_idxstats = DEDUPLICATE_PICARD.out.idxstats
+
 }
 
 

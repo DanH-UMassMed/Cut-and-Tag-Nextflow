@@ -1,7 +1,7 @@
 
 
 // This process does Nothing! 
-// This enables the workflow to call get_samplesheet_paths 
+// TODO Write code to check sheet format is correct 
 process SAMPLESHEET_CHECK {
     label 'process_low'
 

@@ -22,18 +22,18 @@ process TRIM_GALORE {
     publishDir = [
                 [
                     path: { "${params.results_dir}/01_prealign/trimgalore/fastqc" },
-                    mode: "copy",
+                    mode: "${params.publish_dir_mode}",
                     pattern: "*.html"
                 ],
                 [
                     path: { "${params.results_dir}/01_prealign/trimgalore" },
-                    mode: "copy",
+                    mode: "${params.publish_dir_mode}",
                     pattern: "*.fastq.gz",
                     enabled: params.save_trimmed
                 ],
                 [
                     path: { "${params.results_dir}/01_prealign/trimgalore" },
-                    mode: "copy",
+                    mode: "${params.publish_dir_mode}",
                     pattern: "*.txt"
                 ]
             ]
