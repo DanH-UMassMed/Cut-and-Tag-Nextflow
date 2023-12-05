@@ -1,16 +1,23 @@
-
 process FASTQC {
-    tag "FASTQC on $meta.id"
+    tag "$meta.id"
     label 'process_medium'
+
     container 'danhumassmed/qc-tools:1.0.1'
-    
+
+    publishDir =[ path: { "${task.ext.publish_dir_path}" }, 
+                  mode: "${params.publish_dir_mode}", 
+                  enabled: true 
+                ]
+                
     input:
     tuple val(meta), path(reads)
-    val state
 
     output:
     tuple val(meta), path("*.html"), emit: html
     tuple val(meta), path("*.zip") , emit: zip
+
+    when:
+    task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
@@ -28,6 +35,5 @@ process FASTQC {
         $args \\
         --threads $task.cpus \\
         $renamed_files
-    """   
+    """
 }
-

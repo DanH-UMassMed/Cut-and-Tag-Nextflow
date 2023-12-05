@@ -1,8 +1,8 @@
-include { BEDTOOLS_SORT     } from "../modules/bedtools"
-include { TABIX_BGZIPTABIX  } from "../modules/bedtools"
-include { SAMTOOLS_FAIDX    } from "../modules/samtools"
-include { SAMTOOLS_FAIDX as CHROMSIZES_TARGET } from "../modules/samtools"
-include { SAMTOOLS_FAIDX as CHROMSIZES_SPIKEIN } from "../modules/samtools"
+include { BEDTOOLS_SORT as ANNOTATION_BEDTOOLS_SORT } from "../modules/bedtools"
+include { TABIX_BGZIPTABIX                          } from "../modules/bedtools"
+include { SAMTOOLS_FAIDX                            } from "../modules/samtools"
+include { SAMTOOLS_FAIDX as CHROMSIZES_TARGET       } from "../modules/samtools"
+include { SAMTOOLS_FAIDX as CHROMSIZES_SPIKEIN      } from "../modules/samtools"
 
 workflow PREPARE_GENOME {
   main:
@@ -26,9 +26,9 @@ workflow PREPARE_GENOME {
 
     ch_tabix          = ch_gene_bed.map { row -> [ [ id:row.getName() ] , row ] }
 
-    BEDTOOLS_SORT ( ch_tabix, [] )
+    ANNOTATION_BEDTOOLS_SORT ( ch_tabix, "bed", [] )
 
-    TABIX_BGZIPTABIX ( BEDTOOLS_SORT.out.sorted )
+    TABIX_BGZIPTABIX ( ANNOTATION_BEDTOOLS_SORT.out.sorted )
 
     ch_gene_bed_index = TABIX_BGZIPTABIX.out.gz_tbi
 

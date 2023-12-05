@@ -26,32 +26,31 @@ ch_dummy_file = file("$projectDir/assets/dummy_file.txt", checkIfExists: true)
                                               
 ch_bt2_to_csv_awk     = file("$projectDir/bin/bt2_report_to_csv.awk"    , checkIfExists: true)
 ch_dt_frag_to_csv_awk = file("$projectDir/bin/dt_frag_report_to_csv.awk", checkIfExists: true)
-print("XXXXXXXXXprojectDir ${projectDir} \n")
-print("ch_bt2_to_csv_awk ${ch_bt2_to_csv_awk.getClass().getName()} \n")
 /*
 ========================================================================================
     IMPORT MODULES/SUBWORKFLOWS
 ========================================================================================
 */
 
-include { PREPARE_GENOME    } from "../subworkflows/prepare-genome"
-include { LOAD_SAMPLE_SHEET } from "../subworkflows/load-sample-sheet.nf"
-include { FASTQC            } from "../modules/fastqc"
-include { TRIM_GALORE       } from "../modules/trim-galore"
-include { ALIGN_BOWTIE2     } from "../subworkflows/align-with-bowtie2"
+include { PREPARE_GENOME           } from "../subworkflows/prepare-genome"
+include { LOAD_SAMPLE_SHEET        } from "../subworkflows/load-sample-sheet.nf"
+include { FASTQC as FASTQC_PRETRIM } from "../modules/fastqc"
+include { TRIM_GALORE              } from "../modules/trim-galore"
+include { ALIGN_BOWTIE2            } from "../subworkflows/align-with-bowtie2"
 include { EXTRACT_METADATA_AWK as EXTRACT_BT2_TARGET_META  } from "../subworkflows/extract-metadata-awk"
-include { EXTRACT_METADATA_AWK as EXTRACT_BT2_SPIKEIN_META  } from "../subworkflows/extract-metadata-awk"
-include { MARK_DUPLICATES_PICARD                           } from "../subworkflows/mark-duplicates-with-picard"
-include { MARK_DUPLICATES_PICARD as DEDUPLICATE_PICARD     } from "../subworkflows/mark-duplicates-with-picard"
+include { EXTRACT_METADATA_AWK as EXTRACT_BT2_SPIKEIN_META } from "../subworkflows/extract-metadata-awk"
+include { MARK_DUPLICATES_PICARD                           } from "../subworkflows/duplicates-processing-with-picard"
+include { MARK_DUPLICATES_PICARD as DEDUPLICATE_PICARD     } from "../subworkflows/duplicates-processing-with-picard"
+include { PREPARE_PEAKCALLING                              } from "../subworkflows/prepare-peakcalling"
 
 
 workflow RUN_CUT_AND_TAG {
-    print("Starting run cut and tag")
     /*
      * SUBWORKFLOW: Uncompress and prepare reference genome files
      */
     PREPARE_GENOME()
 
+    def run_this_code = false
     /*
      * SUBWORKFLOW: Read in samplesheet, validate and stage input files
      */
@@ -60,7 +59,7 @@ workflow RUN_CUT_AND_TAG {
     /*
      * WORKFLOWS: Read QC, trim adapters and perform post-trim read QC
      */
-    FASTQC(ch_reads, "pretrim_fatstqc")
+    FASTQC_PRETRIM(ch_reads)
     TRIM_GALORE(ch_reads) 
     ch_trimmed_reads = TRIM_GALORE.out.reads
 
@@ -93,27 +92,27 @@ workflow RUN_CUT_AND_TAG {
 
     ch_metadata_bt2_target  = Channel.empty()
     ch_metadata_bt2_spikein = Channel.empty()
-    def run_this_code = false
-    if(run_this_code) {
+    
         /*
         * SUBWORKFLOW: extract aligner metadata
         * This could likely be removed EXTRACT_BT2_TARGET_META EXTRACT_BT2_SPIKEIN_META
         */
-        //script_mode = true
-        EXTRACT_BT2_TARGET_META (
-            ch_bowtie2_log,
-            ch_bt2_to_csv_awk,
-            true
-        )
-        ch_metadata_bt2_target = EXTRACT_BT2_TARGET_META.out.metadata
+
+        // //script_mode = true
+        // EXTRACT_BT2_TARGET_META (
+        //     ch_bowtie2_log,
+        //     ch_bt2_to_csv_awk,
+        //     true
+        // )
+        // ch_metadata_bt2_target = EXTRACT_BT2_TARGET_META.out.metadata
         
-        EXTRACT_BT2_SPIKEIN_META (
-                ch_bowtie2_spikein_log,
-                ch_bt2_to_csv_awk,
-                true
-            )
-        ch_metadata_bt2_spikein = EXTRACT_BT2_SPIKEIN_META.out.metadata
-    }
+        // EXTRACT_BT2_SPIKEIN_META (
+        //         ch_bowtie2_spikein_log,
+        //         ch_bt2_to_csv_awk,
+        //         true
+        //     )
+        // ch_metadata_bt2_spikein = EXTRACT_BT2_SPIKEIN_META.out.metadata
+
 
     /*
      *  SUBWORKFLOW: Filter reads based some standard measures
@@ -125,7 +124,7 @@ workflow RUN_CUT_AND_TAG {
      *  - Filter out mitochondrial reads (if required)
      */
 
-/*
+    /*
      * SUBWORKFLOW: Mark duplicates on all samples
      */
     ch_markduplicates_metrics = Channel.empty()
@@ -162,6 +161,22 @@ workflow RUN_CUT_AND_TAG {
     ch_samtools_flagstat = DEDUPLICATE_PICARD.out.flagstat
     ch_samtools_idxstats = DEDUPLICATE_PICARD.out.idxstats
 
+    /*
+    * SUBWORKFLOW: Convert BAM files to bedgraph/bigwig and apply configured normalisation strategy
+    */
+    if(run_this_code) {
+
+    PREPARE_PEAKCALLING(
+        ch_samtools_bam,
+        ch_samtools_bai,
+        PREPARE_GENOME.out.chrom_sizes.collect(),
+        ch_dummy_file,
+        params.normalisation_mode,
+        ch_metadata_bt2_spikein
+    )
+    ch_bedgraph          = PREPARE_PEAKCALLING.out.bedgraph
+    ch_bigwig            = PREPARE_PEAKCALLING.out.bigwig
+
+    }
+
 }
-
-

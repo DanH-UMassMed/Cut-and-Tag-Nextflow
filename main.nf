@@ -18,6 +18,13 @@ print("params.bowtie2   ${params.bowtie2} \n")
 print("params.gtf       ${params.gtf} \n")
 print("params.gene_bed  ${params.gene_bed} \n")
 print("params.blacklist ${params.blacklist} \n")
+print("===========================================\n")
+print("params.save_markdup_bam ${params.save_markdup_bam} \n")
+print("params.save_dedup_bam ${params.save_dedup_bam} \n")
+print("params.dedup_target_reads ${params.dedup_target_reads} \n")
+print("===========================================\n")
+print("params.save_reference ${params.save_reference} \n")
+print("params.publish_dir_mode ${params.publish_dir_mode} \n")
 
 /*
 ========================================================================================

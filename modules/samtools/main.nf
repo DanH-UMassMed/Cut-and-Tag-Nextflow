@@ -4,6 +4,13 @@ process SAMTOOLS_FAIDX {
     label 'process_low'
     container 'danhumassmed/samtools-bedtools:1.0.1'
 
+    publishDir =[ path: { "${task.ext.publish_dir_path}" }, 
+                  mode: "${params.publish_dir_mode}", 
+                  overwrite: true,
+                  pattern: "*",
+                  enabled: params.save_reference || params.save_chromsize
+                ]
+    
     input:
     tuple val(meta), path(fasta)
 
@@ -18,6 +25,8 @@ process SAMTOOLS_FAIDX {
 
     script:
     """
+    echo "publish_dir_enabled=${task.ext.publish_dir_enabled}" > debug.txt
+    echo "publish_dir_path=${task.ext.publish_dir_path}" >>debug.txt
     samtools faidx $fasta
     cut -f 1,2 ${fasta}.fai > ${fasta}.sizes
     """
@@ -28,6 +37,7 @@ process SAMTOOLS_SORT {
     label 'process_medium'
 
     container 'danhumassmed/samtools-bedtools:1.0.1'
+
     publishDir = [
         path: { "${params.results_dir}/02_alignment/bowtie2/target" },
         mode: "${params.publish_dir_mode}",

@@ -4,6 +4,27 @@ process BOWTIE2_ALIGN {
     label "process_medium"
 
     container 'danhumassmed/bowtie-tophat:1.0.1'
+
+    publishDir = [
+        [
+            path: { "${task.ext.publish_dir_path_log}" },
+            mode: "${params.publish_dir_mode}",
+            pattern: '*.log'
+        ],
+        [
+            path: { "${task.ext.publish_dir_path_bam}" },
+            mode: "${params.publish_dir_mode}" ,
+            pattern: '*.bam',
+            enabled: params.save_align_target || params.save_align_spikein
+        ],
+        [
+            path: { "${task.ext.publish_dir_path_fastq}" },
+            mode: "${params.publish_dir_mode}",
+            pattern: '*.fastq.gz',
+            enabled: params.save_unaligned
+        ]
+    ]
+
     
     input:
     tuple val(meta) , path(reads)
@@ -61,7 +82,4 @@ process BOWTIE2_ALIGN {
     fi
     
     """
-
-    
-
 }

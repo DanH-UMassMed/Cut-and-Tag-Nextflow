@@ -4,6 +4,12 @@ process PICARD_MARKDUPLICATES {
 
     container "danhumassmed/picard-trimmomatic:1.0.1"
 
+    publishDir = [
+        path: { "${task.ext.publish_dir_path}"  },
+        mode: "${params.publish_dir_mode}",
+        enabled: params.save_markdup_bam || params.save_dedup_bam
+    ]
+
     input:
     tuple val(meta), path(bam)
     tuple val(meta2), path(fasta)
@@ -37,9 +43,7 @@ process PICARD_MARKDUPLICATES {
         --INPUT $bam \\
         --OUTPUT ${prefix}.bam \\
         --REFERENCE_SEQUENCE $fasta \\
-        --METRICS_FILE ${prefix}.MarkDuplicates.metrics.txt
-
-    
+        --METRICS_FILE ${prefix}.MarkDuplicates.metrics.txt 
     """
 
 }
