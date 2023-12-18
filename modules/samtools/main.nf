@@ -23,11 +23,13 @@ process SAMTOOLS_FAIDX {
     when:
     task.ext.when == null || task.ext.when
 
-    script:
+   script:
+    def args = task.ext.args ?: ''
     """
-    echo "publish_dir_enabled=${task.ext.publish_dir_enabled}" > debug.txt
-    echo "publish_dir_path=${task.ext.publish_dir_path}" >>debug.txt
-    samtools faidx $fasta
+    samtools \\
+        faidx \\
+        $fasta \\
+        $args 
     cut -f 1,2 ${fasta}.fai > ${fasta}.sizes
     """
 }
@@ -39,10 +41,10 @@ process SAMTOOLS_SORT {
     container 'danhumassmed/samtools-bedtools:1.0.1'
 
     publishDir = [
-        path: { "${params.results_dir}/02_alignment/bowtie2/target" },
+        path: { "${task.ext.publish_dir_path}" },
         mode: "${params.publish_dir_mode}",
         pattern: "*.bam",
-        enabled: ( params.save_align_intermed )
+        enabled: params.save_align_target || params.save_align_spikein || params.save_markdup || params.save_dedup
     ]
 
     input:
@@ -56,14 +58,16 @@ process SAMTOOLS_SORT {
     task.ext.when == null || task.ext.when
 
     script:
-    def prefix = "${meta.id}.target.sorted"
-    if ("$bam" == "${prefix}.bam") error "Input and output names are the same disambiguate!"
+    def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    if ("$bam" == "${prefix}.bam") error "Input and output names are the same, use \"task.ext.prefix\" to disambiguate!"
     """
     samtools sort \\
+        $args \\
         -@ $task.cpus \\
         -o ${prefix}.bam \\
         -T $prefix \\
-        $bam    
+        $bam 
     """
 }
 
@@ -74,12 +78,11 @@ process SAMTOOLS_INDEX {
 
     container 'danhumassmed/samtools-bedtools:1.0.1'
     publishDir = [
-                path: { "${params.results_dir}/02_alignment/bowtie2/target" },
-                mode: "${params.publish_dir_mode}",
-                pattern: "*.bai",
-                enabled: ( params.save_align_intermed )
-            ]
-
+        path: { "${task.ext.publish_dir_path}" },
+        mode: "${params.publish_dir_mode}",
+        pattern: "*.bai",
+        enabled: params.save_align_target || params.save_align_spikein || params.save_markdup || params.save_dedup
+    ]
 
     input:
     tuple val(meta), path(input)
@@ -93,10 +96,12 @@ process SAMTOOLS_INDEX {
     task.ext.when == null || task.ext.when
 
     script:
+    def args = task.ext.args ?: ''
     """
     samtools \\
         index \\
         -@ ${task.cpus-1} \\
+        $args \\
         $input
     """
 }
@@ -106,6 +111,13 @@ process SAMTOOLS_STATS {
     label 'process_low'
 
     container 'danhumassmed/samtools-bedtools:1.0.1' 
+
+    publishDir = [
+        path: { "${task.ext.publish_dir_path}" },
+        mode: "${params.publish_dir_mode}",
+        pattern: "*.{stats,flagstat,idxstats}",
+        enabled: params.save_align_target || params.save_align_spikein || params.save_markdup || params.save_dedup
+    ]
 
     input:
     tuple val(meta), path(input), path(input_index)
@@ -118,7 +130,8 @@ process SAMTOOLS_STATS {
     task.ext.when == null || task.ext.when
 
     script:
-    def prefix = "${meta.id}"
+    def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
     def reference = fasta ? "--reference ${fasta}" : ""
     """
     samtools \\
@@ -136,6 +149,13 @@ process SAMTOOLS_FLAGSTAT {
 
     container 'danhumassmed/samtools-bedtools:1.0.1' 
 
+    publishDir = [
+        path: { "${task.ext.publish_dir_path}" },
+        mode: "${params.publish_dir_mode}",
+        pattern: "*.{stats,flagstat,idxstats}",
+        enabled: params.save_align_target || params.save_align_spikein || params.save_markdup || params.save_dedup
+    ]
+
     input:
     tuple val(meta), path(bam), path(bai)
 
@@ -146,7 +166,8 @@ process SAMTOOLS_FLAGSTAT {
     task.ext.when == null || task.ext.when
 
     script:
-    def prefix = "${meta.id}"
+    def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     samtools \\
         flagstat \\
@@ -162,6 +183,13 @@ process SAMTOOLS_IDXSTATS {
 
     container 'danhumassmed/samtools-bedtools:1.0.1'  
 
+    publishDir = [
+        path: { "${task.ext.publish_dir_path}" },
+        mode: "${params.publish_dir_mode}",
+        pattern: "*.{stats,flagstat,idxstats}",
+        enabled: params.save_align_target || params.save_align_spikein || params.save_markdup || params.save_dedup
+    ]
+
     input:
     tuple val(meta), path(bam), path(bai)
 
@@ -172,12 +200,12 @@ process SAMTOOLS_IDXSTATS {
     task.ext.when == null || task.ext.when
 
     script:
-    def prefix = "${meta.id}"
-
+    def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     samtools \\
         idxstats \\
-        --threads ${task.cpus} \\
+        --threads ${task.cpus-1} \\
         $bam \\
         > ${prefix}.idxstats
     """

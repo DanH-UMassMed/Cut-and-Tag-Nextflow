@@ -7,7 +7,7 @@ process PICARD_MARKDUPLICATES {
     publishDir = [
         path: { "${task.ext.publish_dir_path}"  },
         mode: "${params.publish_dir_mode}",
-        enabled: params.save_markdup_bam || params.save_dedup_bam
+        enabled: params.save_markdup || params.save_dedup
     ]
 
     input:
